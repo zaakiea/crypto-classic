@@ -44,15 +44,15 @@ export function vigenere(
     const cleanKey = toAlpha(key);
     if (!cleanKey) throw new Error("Kunci tidak boleh kosong");
 
-    return clean
-        .split("")
-        .map((ch, i) => {
-            const p = ch.charCodeAt(0) - 65;
-            const k = cleanKey.charCodeAt(i % cleanKey.length) - 65;
-            const c = mode === "encrypt" ? posMod(p + k, 26) : posMod(p - k, 26);
-            return String.fromCharCode(c + 65);
-        })
-        .join("");
+    let result = "";
+    const len = cleanKey.length;
+    for (let i = 0; i < clean.length; i++) {
+        const p = clean.charCodeAt(i) - 65;
+        const k = cleanKey.charCodeAt(i % len) - 65;
+        const c = mode === "encrypt" ? posMod(p + k, 26) : posMod(p - k, 26);
+        result += String.fromCharCode(c + 65);
+    }
+    return result;
 }
 
 // ============================================================
@@ -74,17 +74,17 @@ export function affine(
     }
     const clean = toAlpha(text);
     const aInv = modInverse(a, 26);
-    return clean
-        .split("")
-        .map((ch) => {
-            const p = ch.charCodeAt(0) - 65;
-            const c =
-                mode === "encrypt"
-                    ? posMod(a * p + b, 26)
-                    : posMod(aInv * (p - b), 26);
-            return String.fromCharCode(c + 65);
-        })
-        .join("");
+
+    let result = "";
+    for (let i = 0; i < clean.length; i++) {
+        const p = clean.charCodeAt(i) - 65;
+        const c =
+            mode === "encrypt"
+                ? posMod(a * p + b, 26)
+                : posMod(aInv * (p - b), 26);
+        result += String.fromCharCode(c + 65);
+    }
+    return result;
 }
 
 // ============================================================
@@ -152,28 +152,24 @@ export function playfair(
     const digraphs = prepareDigraphs(text);
     const dir = mode === "encrypt" ? 1 : -1;
 
-    return digraphs
-        .map((pair) => {
-            const [r1, c1] = matrixPos(matrix, pair[0]);
-            const [r2, c2] = matrixPos(matrix, pair[1]);
-            if (r1 === r2) {
-                // Same row: shift columns
-                return (
-                    matrix[r1 * 5 + posMod(c1 + dir, 5)] +
-                    matrix[r2 * 5 + posMod(c2 + dir, 5)]
-                );
-            } else if (c1 === c2) {
-                // Same column: shift rows
-                return (
-                    matrix[posMod(r1 + dir, 5) * 5 + c1] +
-                    matrix[posMod(r2 + dir, 5) * 5 + c2]
-                );
-            } else {
-                // Rectangle: swap columns
-                return matrix[r1 * 5 + c2] + matrix[r2 * 5 + c1];
-            }
-        })
-        .join("");
+    let result = "";
+    for (const pair of digraphs) {
+        const [r1, c1] = matrixPos(matrix, pair[0]);
+        const [r2, c2] = matrixPos(matrix, pair[1]);
+        if (r1 === r2) {
+            // Same row: shift columns
+            result += matrix[r1 * 5 + posMod(c1 + dir, 5)] +
+                matrix[r2 * 5 + posMod(c2 + dir, 5)];
+        } else if (c1 === c2) {
+            // Same column: shift rows
+            result += matrix[posMod(r1 + dir, 5) * 5 + c1] +
+                matrix[posMod(r2 + dir, 5) * 5 + c2];
+        } else {
+            // Rectangle: swap columns
+            result += matrix[r1 * 5 + c2] + matrix[r2 * 5 + c1];
+        }
+    }
+    return result;
 }
 
 // ============================================================
@@ -359,45 +355,183 @@ export function enigma(
 }
 
 // ============================================================
-//  SIMPLIFIED ENIGMA (Educational Rotor Cipher)
-//  Each letter i is enciphered with key K[pos] where
-//  pos = (initialPosition + i) mod numKeys
+//  ENIGMA/ROTOR CIPHER (Custom Alphabet Length Version)
 // ============================================================
 
+export type RotorCount = 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+
 /**
- * Validate that a key is a valid 26-letter permutation of A-Z.
+ * Generate custom alphabet based on length
+ * Example: length 5 -> ['A', 'B', 'C', 'D', 'E']
  */
-function validateKey(key: string, index: number): void {
-    const k = key.toUpperCase().replace(/[^A-Z]/g, "");
-    if (k.length !== 26)
-        throw new Error(`K${index}: kunci harus tepat 26 huruf (saat ini ${k.length})`);
-    if (new Set(k.split("")).size !== 26)
-        throw new Error(`K${index}: kunci harus merupakan permutasi A-Z (ada huruf duplikat)`);
+export function generateAlphabet(length: number): string[] {
+    if (length < 5 || length > 26) {
+        throw new Error("Panjang alfabet harus antara 5 dan 26");
+    }
+    return Array.from({ length }, (_, i) => String.fromCharCode(65 + i));
 }
 
-export function simplifiedEnigma(
+/**
+ * Generate randomized keys for each rotor position
+ * Each key is a shuffled version of the alphabet
+ */
+export function generateRandomKeys(
+    rotorCount: number,
+    alphabetLength: number
+): { [key: string]: string[] } {
+    const alphabet = generateAlphabet(alphabetLength);
+    const keys: { [key: string]: string[] } = {};
+
+    for (let i = 0; i < rotorCount; i++) {
+        const shuffled = [...alphabet];
+        for (let j = shuffled.length - 1; j > 0; j--) {
+            const k = Math.floor(Math.random() * (j + 1));
+            [shuffled[j], shuffled[k]] = [shuffled[k], shuffled[j]];
+        }
+        keys[`K${i}`] = shuffled;
+    }
+
+    return keys;
+}
+
+/**
+ * Validate if text only contains letters within the custom alphabet
+ */
+export function isValidForAlphabet(text: string, alphabetLength: number): boolean {
+    const maxCharCode = 64 + alphabetLength;
+    for (const char of text.toUpperCase()) {
+        if (char === " ") continue;
+        const code = char.charCodeAt(0);
+        if (code < 65 || code > maxCharCode) return false;
+    }
+    return true;
+}
+
+/**
+ * Get the index of a letter in the custom alphabet (0 to length-1)
+ */
+function getLetterIndex(letter: string, alphabetLength: number): number {
+    const upper = letter.toUpperCase();
+    const code = upper.charCodeAt(0);
+    if (code < 65 || code > 64 + alphabetLength) return -1;
+    return code - 65;
+}
+
+/**
+ * Encrypt/Decrypt using the Enigma rotor cipher with custom alphabet length
+ */
+export function customEnigma(
     text: string,
-    keys: string[],
-    initialPosition: number,
+    rotorCount: RotorCount | number,
+    startPosition: number,
+    keys: { [key: string]: string[] },
+    alphabetLength: number,
     mode: "encrypt" | "decrypt"
-): string {
-    if (keys.length === 0) throw new Error("Minimal 1 kunci harus ditentukan");
-    const clean = toAlpha(text);
-    if (!clean) throw new Error("Teks input tidak boleh kosong");
+): { result: string; steps: any[] } {
+    const keyNames = Object.keys(keys).sort();
+    let result = "";
+    let currentPosition = startPosition % rotorCount;
+    const alphabet = generateAlphabet(alphabetLength);
+    const steps = [];
 
-    keys.forEach((k, i) => validateKey(k, i));
+    for (let i = 0; i < text.length; i++) {
+        const originalChar = text[i];
+        const char = originalChar.toUpperCase();
 
-    return clean
-        .split("")
-        .map((ch, i) => {
-            const pos = posMod(initialPosition + i, keys.length);
-            const key = keys[pos].toUpperCase().replace(/[^A-Z]/g, "");
-            const idx = ch.charCodeAt(0) - 65;
-            if (mode === "encrypt") {
-                return key[idx];
+        // Preserve non-alphabetic/spaces
+        if (char === " " || char < "A" || char > String.fromCharCode(64 + alphabetLength)) {
+            result += originalChar;
+            continue;
+        }
+
+        const currentKey = keys[keyNames[currentPosition]];
+        let substitutedChar = "";
+
+        if (mode === "encrypt") {
+            const letterIndex = getLetterIndex(char, alphabetLength);
+            if (letterIndex !== -1) {
+                substitutedChar = currentKey[letterIndex];
+                result += substitutedChar;
             } else {
-                return String.fromCharCode(key.indexOf(ch) + 65);
+                result += char;
             }
-        })
-        .join("");
+        } else {
+            const letterIndex = currentKey.indexOf(char);
+            if (letterIndex !== -1) {
+                substitutedChar = alphabet[letterIndex];
+                result += substitutedChar;
+            } else {
+                result += char;
+            }
+        }
+
+        steps.push({
+            i: steps.length,
+            rotorPos: currentPosition,
+            inputChar: char,
+            outputChar: substitutedChar,
+            formula: mode === "encrypt"
+                ? `K${currentPosition}[${char}] = ${substitutedChar}`
+                : `K${currentPosition}⁻¹[${char}] = ${substitutedChar}`,
+        });
+
+        // Advance position
+        currentPosition = (currentPosition + 1) % rotorCount;
+    }
+
+    return { result, steps };
 }
+
+/**
+ * Parse a key string like "D,A,H,C,F,B,G,E" into an array
+ */
+export function parseKeyString(
+    input: string,
+    expectedLength: number
+): { valid: boolean; key?: string[]; error?: string; alphabetLength?: number } {
+    if (!input || input.trim() === "") {
+        return { valid: false, error: "Kunci tidak boleh kosong" };
+    }
+
+    const parts = input.split(",").map((p) => p.trim().toUpperCase()).filter((p) => p);
+
+    if (parts.length === 0) return { valid: false, error: "Tidak ada huruf valid yang ditemukan" };
+    if (parts.some((p) => p.length === 0)) return { valid: false, error: "Format tidak valid - hapus koma ekstra" };
+    if (parts.some((p) => p.length > 1)) return { valid: false, error: "Setiap entri harus berupa satu huruf panjangnya" };
+
+    const seen = new Set<string>();
+    const duplicates: string[] = [];
+    for (const letter of parts) {
+        if (seen.has(letter)) duplicates.push(letter);
+        seen.add(letter);
+    }
+    if (duplicates.length > 0) return { valid: false, error: `Huruf duplikat: ${duplicates.join(", ")}` };
+
+    const maxCharCode = Math.max(...parts.map((p) => p.charCodeAt(0)));
+    const detectedLength = maxCharCode - 64;
+
+    if (detectedLength < 5 || detectedLength > 26) {
+        return { valid: false, error: "Huruf harus dalam rentang A hingga Z (max 26)" };
+    }
+
+    for (const letter of parts) {
+        const code = letter.charCodeAt(0);
+        if (code < 65 || code > 64 + detectedLength) {
+            return {
+                valid: false,
+                error: `Huruf '${letter}' di luar batas alfabet (A-${String.fromCharCode(64 + detectedLength)})`,
+            };
+        }
+    }
+
+    if (expectedLength > 0 && parts.length !== expectedLength) {
+        return {
+            valid: false,
+            error: `Diharapkan panjang ${expectedLength} huruf, tetapi didapatkan ${parts.length}`,
+            alphabetLength: detectedLength,
+        };
+    }
+
+    return { valid: true, key: parts, alphabetLength: detectedLength };
+}
+

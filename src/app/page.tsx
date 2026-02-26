@@ -34,169 +34,164 @@ export default function VigenereScreen() {
   const lineNumbers = Array.from({ length: Math.max(lineCount, 5) }, (_, i) => i + 1);
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <header className="mb-10">
-        <div className="flex items-start justify-between">
+    <div className="w-full h-full aero-window flex flex-col shadow-[2px_10px_30px_rgba(0,0,0,0.5)] overflow-hidden">
+
+      {/* Aero Title Bar */}
+      <div className="aero-titlebar flex items-center justify-between px-3 py-1.5 select-none relative z-10">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-[16px] text-[#003366] drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">verified_user</span>
+          <span className="text-sm font-semibold text-[#000] drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] tracking-wide">
+            Vigenère Cipher - Kripto Klasik
+          </span>
+        </div>
+
+        {/* Window Controls */}
+        <div className="flex items-center gap-[2px] pr-1">
+          <button disabled className="w-8 h-5 rounded-[3px] bg-[linear-gradient(to_bottom,rgba(255,255,255,0.4)_0%,rgba(255,255,255,0)_100%)] border border-white/40 flex items-center justify-center opacity-50 cursor-default">
+            <span className="w-2.5 h-[2px] bg-black/50 translate-y-[3px]"></span>
+          </button>
+          <button disabled className="w-8 h-5 rounded-[3px] bg-[linear-gradient(to_bottom,rgba(255,255,255,0.4)_0%,rgba(255,255,255,0)_100%)] border border-white/40 flex items-center justify-center opacity-50 cursor-default">
+            <span className="w-2.5 h-2.5 border-2 border-black/50"></span>
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-11 h-5 rounded-[4px] bg-[linear-gradient(to_bottom,#f4a4a4_0%,#e04343_45%,#c72222_50%,#bd1515_100%)] border border-[#a32222] hover:bg-[linear-gradient(to_bottom,#fbbebe_0%,#f05050_45%,#dd2f2f_50%,#d21e1e_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6),_0_1px_2px_rgba(0,0,0,0.3)] flex items-center justify-center text-white text-[12px] font-bold transition-all ml-1"
+            title="Reset"
+          >
+            <span className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)] relative -top-[1px]">✕</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Window Content */}
+      <div className="aero-content flex-1 p-5 bg-[#f0f0f0] flex flex-col gap-5 overflow-y-auto">
+
+        {/* Top Info Area */}
+        <div className="flex bg-white aero-inset p-4 gap-4 items-start">
+          <span className="material-symbols-outlined text-[32px] text-[#2c628b] drop-shadow-sm">info</span>
           <div>
-            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight mb-3">
-              Vigenère Cipher
-            </h2>
-            <p className="text-slate-500 text-lg max-w-3xl leading-relaxed">
-              Metode enkripsi teks alfabetik dengan menggunakan serangkaian
-              sandi Caesar berdasarkan huruf-huruf pada kata kunci.
+            <h2 className="text-[#003399] font-semibold text-base mb-1">Vigenère Cipher Encryption Module</h2>
+            <p className="text-xs text-slate-700">
+              Metode enkripsi teks alfabetik dengan menggunakan serangkaian sandi Caesar berdasarkan huruf-huruf pada kata kunci.
             </p>
           </div>
-          <div className="hidden lg:block">
-            <button className="size-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer shadow-sm">
-              <span className="material-symbols-outlined">settings</span>
-            </button>
-          </div>
         </div>
-      </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left column */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          {/* Input card */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <span className="material-symbols-outlined text-indigo-500 text-[20px]">input</span>
-                Input Teks
-              </label>
-              <span className="text-[10px] font-mono text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">
-                PLAINTEXT / CIPHERTEXT
-              </span>
-            </div>
-            <div className="p-2">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+          {/* Left: Input + Output */}
+          <div className="lg:col-span-7 flex flex-col gap-4">
+
+            {/* Input Area */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex justify-between items-end">
+                <label className="text-[13px] text-slate-800">
+                  Input Teks:
+                </label>
+                <span className="text-[11px] text-slate-500">{charCount} karakter</span>
+              </div>
               <textarea
-                className="w-full min-h-[200px] resize-y border-0 bg-transparent p-4 text-base text-slate-900 placeholder:text-slate-400 focus:ring-0 leading-relaxed font-mono"
-                placeholder="Masukkan pesan yang ingin dienkripsi atau didekripsi di sini..."
+                className="w-full h-32 resize-y aero-inset p-2.5 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-[#fafffb]"
+                placeholder="Masukkan teks di sini..."
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
               />
             </div>
-            <div className="bg-slate-50 px-4 py-2 flex justify-between items-center border-t border-slate-100">
-              <button className="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px]">upload_file</span>
-                Upload File
-              </button>
-              <span className="text-xs text-slate-400">{charCount} Karakter</span>
-            </div>
-          </div>
 
-          {/* Key config card */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-sm font-bold text-slate-900 mb-5 flex items-center gap-2 uppercase tracking-wide">
-              <span className="material-symbols-outlined text-indigo-500 text-[20px]">tune</span>
-              Konfigurasi Kunci
-            </h3>
-            <div className="flex flex-col gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Kata Kunci (Hanya Alfabet)
-                </label>
-                <div className="relative group">
-                  <input
-                    className="w-full rounded-lg border-slate-200 bg-slate-50 text-slate-900 focus:border-indigo-500 focus:ring-indigo-500 pl-10 pr-4 py-2.5 transition-all"
-                    placeholder="Contoh: SECRETKEY"
-                    type="text"
-                    value={cipherKey}
-                    onChange={(e) => setCipherKey(e.target.value)}
-                  />
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="material-symbols-outlined text-slate-400 group-focus-within:text-indigo-500 transition-colors text-[20px]">vpn_key</span>
-                  </div>
+            {/* Controls */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-[#e0eaf5] aero-inset p-2.5 mt-1 gap-3 sm:gap-0">
+              <div className="flex flex-wrap gap-2 sm:gap-4 items-center">
+                <span className="text-xs font-semibold text-[#003366]">Mode:</span>
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="vigenere-mode"
+                      checked={mode === "encrypt"}
+                      onChange={() => setMode("encrypt")}
+                      className="mt-0.5"
+                    />
+                    <span className="text-xs text-slate-800">Enkripsi</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="vigenere-mode"
+                      checked={mode === "decrypt"}
+                      onChange={() => setMode("decrypt")}
+                      className="mt-0.5"
+                    />
+                    <span className="text-xs text-slate-800">Dekripsi</span>
+                  </label>
                 </div>
-                <p className="text-xs text-slate-500 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px]">info</span>
-                  Kunci harus berupa huruf A-Z tanpa spasi.
-                </p>
               </div>
-            </div>
-            <div className="flex flex-col gap-3 mt-8">
-              {/* Mode switch */}
-              <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200">
-                <button
-                  onClick={() => setMode("encrypt")}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${mode === "encrypt" ? "bg-indigo-600 text-white shadow-md" : "text-slate-500 hover:text-slate-700"
-                    }`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">lock</span>
-                  Enkripsi
-                </button>
-                <button
-                  onClick={() => setMode("decrypt")}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${mode === "decrypt" ? "bg-indigo-600 text-white shadow-md" : "text-slate-500 hover:text-slate-700"
-                    }`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">lock_open</span>
-                  Dekripsi
-                </button>
-              </div>
-              {/* Run button */}
+
               <button
                 onClick={() => runCipher()}
-                className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                className="aero-btn w-full sm:w-auto px-6 py-1.5 text-[13px] font-semibold flex items-center gap-2 min-w-[120px] justify-center"
               >
-                <span className="material-symbols-outlined text-[20px]">{mode === "encrypt" ? "lock" : "lock_open"}</span>
-                {mode === "encrypt" ? "Enkripsi Pesan" : "Dekripsi Pesan"}
+                <span className="material-symbols-outlined text-[16px]">{mode === "encrypt" ? "lock" : "lock_open"}</span>
+                Jalankan
               </button>
             </div>
+
+            {/* Output Area */}
+            <div className="flex flex-col gap-1.5 mt-2">
+              <div className="flex justify-between items-end">
+                <label className="text-[13px] text-slate-800">
+                  Hasil Output:
+                </label>
+                <button
+                  onClick={handleCopy}
+                  className="aero-btn px-2 py-0.5 text-[11px] flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[12px]">content_copy</span>
+                  Salin
+                </button>
+              </div>
+              <div className="w-full h-32 aero-inset p-2.5 text-[13px] text-slate-900 bg-white overflow-y-auto font-mono break-all leading-relaxed">
+                {outputText ? (
+                  outputText
+                ) : (
+                  <span className="text-slate-400 italic">Hasil akan muncul di sini...</span>
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right: config */}
+          <div className="lg:col-span-5 flex flex-col gap-4 pb-4 lg:pb-0">
+            <fieldset className="border border-[#b5b5b5] p-4 bg-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,1)]">
+              <legend className="px-2 text-[13px] text-[#003399] font-semibold flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">tune</span>
+                Konfigurasi Kunci
+              </legend>
+
+              <div className="flex flex-col gap-5 mt-2">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs text-slate-800">Kata Kunci (Hanya Alfabet):</span>
+                  <div className="relative">
+                    <input
+                      className="w-full aero-inset py-1.5 pl-2 pr-8 text-[13px] text-slate-900 focus:outline-none focus:bg-[#fafffb]"
+                      type="text"
+                      placeholder="Contoh: SECRETKEY"
+                      value={cipherKey}
+                      onChange={(e) => setCipherKey(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400">
+                      <span className="material-symbols-outlined text-[16px]">vpn_key</span>
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 italic mt-0.5">
+                    * Kunci harus berupa huruf A-Z tanpa spasi.
+                  </p>
+                </label>
+              </div>
+            </fieldset>
           </div>
         </div>
 
-        {/* Right column — output */}
-        <div className="lg:col-span-5 h-full">
-          <div className="bg-slate-100 rounded-xl shadow-xl border border-slate-200 overflow-hidden h-full flex flex-col min-h-[500px]">
-            <div className="px-5 py-3 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-              <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <span className="material-symbols-outlined text-emerald-500 text-[20px]">terminal</span>
-                Hasil Output
-              </label>
-              <button
-                onClick={handleCopy}
-                className="text-slate-500 hover:text-slate-800 transition-colors flex items-center gap-1.5 text-xs font-medium bg-slate-200/60 hover:bg-slate-200 px-2.5 py-1.5 rounded-md border border-slate-200"
-              >
-                <span className="material-symbols-outlined text-[14px]">content_copy</span>
-                Salin
-              </button>
-            </div>
-            <div className="flex-1 p-0 relative font-mono text-sm">
-              <div className="absolute inset-0 flex">
-                <div className="w-12 bg-slate-200/50 border-r border-slate-200 py-4 text-right pr-3 text-slate-400 select-none leading-relaxed text-xs">
-                  {lineNumbers.map((n) => (
-                    <div key={n}>{n}</div>
-                  ))}
-                </div>
-                <textarea
-                  className="flex-1 w-full h-full bg-transparent border-0 p-4 text-slate-700 resize-none focus:ring-0 leading-relaxed placeholder:text-slate-400 text-sm"
-                  placeholder="// Hasil enkripsi atau dekripsi akan muncul di sini..."
-                  value={outputText}
-                  readOnly
-                />
-              </div>
-            </div>
-            <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
-              <div className="flex gap-2 items-center">
-                <div
-                  className={`size-2 rounded-full ${status === "ok"
-                    ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-                    : status === "error"
-                      ? "bg-red-500"
-                      : "bg-slate-400"
-                    } ${status === "ready" ? "" : "animate-pulse"}`}
-                />
-                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">
-                  {status === "ok" ? "Success" : status === "error" ? "Error" : "System Ready"}
-                </span>
-              </div>
-              <span className="text-[10px] font-mono text-slate-400">
-                UTF-8 • {elapsed}ms
-              </span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

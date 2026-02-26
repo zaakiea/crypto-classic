@@ -2,90 +2,102 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 interface SidebarLinkProps {
     href: string;
     label: string;
-    icon: string;
-    activeIcon?: string;
+    onClick?: () => void;
 }
 
-const SidebarLink = ({ href, label, icon, activeIcon }: SidebarLinkProps) => {
+const SidebarLink = ({ href, label, onClick }: SidebarLinkProps) => {
     const pathname = usePathname();
     const isActive = pathname === href;
 
-    const iconClass = `material-symbols-outlined text-[20px] transition-transform ${isActive ? "filled" : "group-hover:scale-110"
-        }`;
-
     const baseClasses =
-        "group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 border-l-4";
+        "group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-[3px] transition-all duration-100 border text-sm";
+
+    // Win7 Explorer selection style (light blue gradient, soft border)
     const activeClasses =
-        "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-600 font-semibold";
+        "bg-[linear-gradient(to_bottom,rgba(235,244,253,0.9)_0%,rgba(201,224,247,0.9)_100%)] text-[#004e98] border-[#84acdd] font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]";
     const inactiveClasses =
-        "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 border-transparent font-medium";
+        "text-slate-700 hover:bg-[linear-gradient(to_bottom,rgba(250,252,254,0.8)_0%,rgba(234,246,253,0.8)_100%)] hover:border-[#b8d6fb] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] border-transparent";
 
     return (
         <Link
             href={href}
+            onClick={onClick}
             className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
         >
-            <span className={iconClass}>
-                {isActive && activeIcon ? activeIcon : icon}
-            </span>
-            <span className="text-sm">{label}</span>
+            <span>{label}</span>
         </Link>
     );
 };
 
 const Sidebar = () => {
+    const [isOpen, setIsOpen] = useState(false);
+
     return (
-        <aside className="w-72 flex-shrink-0 flex flex-col bg-white dark:bg-[#1e293b] border-r border-slate-200 dark:border-slate-800 h-full overflow-y-auto z-20 transition-all duration-300">
-            <div className="p-6 pb-2">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="bg-indigo-600 rounded-lg size-10 flex items-center justify-center shadow-lg shadow-indigo-600/20 text-white">
-                        <span className="material-symbols-outlined text-2xl filled">
-                            shield
-                        </span>
+        <>
+            {/* Mobile Toggle Button (Visible only on mobile) */}
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="md:hidden fixed top-3 left-3 z-[60] p-1.5 flex items-center justify-center bg-[linear-gradient(to_bottom,rgba(255,255,255,0.8)_0%,rgba(235,244,253,0.9)_100%)] border border-[#84acdd] rounded-[3px] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),_0_2px_5px_rgba(0,0,0,0.2)] text-[#004e98] transition-all"
+                aria-label="Toggle Sidebar"
+            >
+                <span className="material-symbols-outlined text-[20px]">{isOpen ? "close" : "menu"}</span>
+            </button>
+
+            {/* Overlay for mobile when sidebar is open */}
+            {isOpen && (
+                <div
+                    className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[40] transition-opacity"
+                    onClick={() => setIsOpen(false)}
+                />
+            )}
+
+            <aside className={`
+                fixed md:static inset-y-0 left-0 z-[50]
+                transform ${isOpen ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300 ease-in-out
+                md:transform-none md:translate-x-0
+                w-64 flex-shrink-0 flex flex-col bg-[rgba(240,245,255,0.95)] md:bg-[rgba(240,245,255,0.65)] backdrop-blur-xl border-r border-white/60 h-full overflow-y-auto shadow-[2px_0_15px_rgba(0,0,0,0.1)]
+            `}>
+                <div className="flex flex-col h-full p-4 pb-4">
+                    {/* Add mt-14 on mobile to prevent overlap with the fixed toggle button */}
+                    <div className="flex items-center gap-3 mb-6 px-2 mt-10 md:mt-0">
+                        <div className="size-8 flex-shrink-0 flex items-center justify-center text-[#11689b]">
+                            {/* Using a shield to represent crypto/security */}
+                            <span className="material-symbols-outlined text-[32px] filled drop-shadow-sm">
+                                shield
+                            </span>
+                        </div>
+                        <div className="flex flex-col">
+                            <h1 className="text-[#003366] text-lg font-bold leading-none tracking-tight drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] whitespace-nowrap">
+                                Kriptografi Klasik
+                            </h1>
+                        </div>
                     </div>
-                    <div className="flex flex-col">
-                        <h1 className="text-slate-900 dark:text-white text-lg font-bold leading-none tracking-tight">
-                            Kripto Klasik
-                        </h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs font-medium mt-1">
-                            Kalkulator Kriptografi
+
+                    <nav className="flex flex-col gap-0.5 mt-2 overflow-y-auto pb-4">
+                        <div className="flex px-2 py-1 mb-1 text-xs font-bold text-[#11689b] uppercase tracking-wider items-center gap-1 drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+                            <span className="material-symbols-outlined text-[14px]">folder_open</span>
+                            Algorithms
+                        </div>
+                        <SidebarLink href="/" label="Vigenère Cipher" onClick={() => setIsOpen(false)} />
+                        <SidebarLink href="/affine" label="Affine Cipher" onClick={() => setIsOpen(false)} />
+                        <SidebarLink href="/playfair" label="Playfair Cipher" onClick={() => setIsOpen(false)} />
+                        <SidebarLink href="/hill" label="Hill Cipher" onClick={() => setIsOpen(false)} />
+                        <SidebarLink href="/enigma" label="Enigma Cipher" onClick={() => setIsOpen(false)} />
+                    </nav>
+
+                    <div className="flex mt-auto pt-6 px-2 justify-center md:justify-start">
+                        <p className="text-[10px] text-slate-500 font-medium leading-tight text-center md:text-left">
+                            created by Dzaki Eka Atmaja (21120123130068)
                         </p>
                     </div>
                 </div>
-                <nav className="flex flex-col gap-1.5">
-                    <div className="px-3 py-2 mb-1 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                        Classical Ciphers
-                    </div>
-                    <SidebarLink href="/" label="Vigenère Cipher" icon="verified_user" />
-                    <SidebarLink href="/affine" label="Affine Cipher" icon="lock" />
-                    <SidebarLink href="/playfair" label="Playfair Cipher" icon="grid_view" />
-                    <SidebarLink href="/hill" label="Hill Cipher" icon="trending_up" />
-                    <SidebarLink href="/enigma" label="Enigma Cipher" icon="memory" />
-                </nav>
-            </div>
-            <div className="mt-auto p-6 border-t border-slate-100 dark:border-slate-800/50">
-                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-100 dark:border-slate-700/50">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-lg text-indigo-600 dark:text-indigo-400">
-                            <span className="material-symbols-outlined text-xl">help</span>
-                        </div>
-                        <div>
-                            <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                                Butuh Bantuan?
-                            </p>
-                            <span className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium mt-0.5 block cursor-pointer">
-                                Lihat Dokumentasi →
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </aside>
+            </aside>
+        </>
     );
 };
-
 export default Sidebar;
