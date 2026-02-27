@@ -29,6 +29,15 @@ function modInverse(a: number, m: number): number {
     throw new Error(`Tidak ada invers modular untuk a=${a} mod ${m}`);
 }
 
+export type CipherStep = {
+    i?: number;
+    char?: string;
+    keyChar?: string;
+    outputChar?: string;
+    formula?: string;
+    [key: string]: any; // Allow flexibility for different ciphers
+};
+
 // ============================================================
 //  VIGENERE CIPHER
 //  Encrypt: C = (P + K) mod 26
@@ -39,20 +48,33 @@ export function vigenere(
     text: string,
     key: string,
     mode: "encrypt" | "decrypt"
-): string {
+): { result: string; steps: CipherStep[] } {
     const clean = toAlpha(text);
     const cleanKey = toAlpha(key);
     if (!cleanKey) throw new Error("Kunci tidak boleh kosong");
 
     let result = "";
+    const steps: CipherStep[] = [];
     const len = cleanKey.length;
     for (let i = 0; i < clean.length; i++) {
         const p = clean.charCodeAt(i) - 65;
-        const k = cleanKey.charCodeAt(i % len) - 65;
+        const keyChar = cleanKey[i % len];
+        const k = keyChar.charCodeAt(0) - 65;
         const c = mode === "encrypt" ? posMod(p + k, 26) : posMod(p - k, 26);
-        result += String.fromCharCode(c + 65);
+        const outChar = String.fromCharCode(c + 65);
+        result += outChar;
+
+        steps.push({
+            i: i + 1,
+            char: clean[i],
+            keyChar: keyChar,
+            outputChar: outChar,
+            formula: mode === "encrypt"
+                ? `(${p} + ${k}) mod 26 = ${c}`
+                : `(${p} - ${k}) mod 26 = ${c}`
+        });
     }
-    return result;
+    return { result, steps };
 }
 
 // ============================================================
@@ -66,7 +88,7 @@ export function affine(
     a: number,
     b: number,
     mode: "encrypt" | "decrypt"
-): string {
+): { result: string; steps: CipherStep[] } {
     if (gcd(a, 26) !== 1) {
         throw new Error(
             `Nilai a=${a} tidak koprim dengan 26. Nilai valid: 1,3,5,7,9,11,15,17,19,21,23,25`
@@ -76,15 +98,26 @@ export function affine(
     const aInv = modInverse(a, 26);
 
     let result = "";
+    const steps: CipherStep[] = [];
     for (let i = 0; i < clean.length; i++) {
         const p = clean.charCodeAt(i) - 65;
         const c =
             mode === "encrypt"
                 ? posMod(a * p + b, 26)
                 : posMod(aInv * (p - b), 26);
-        result += String.fromCharCode(c + 65);
+        const outChar = String.fromCharCode(c + 65);
+        result += outChar;
+
+        steps.push({
+            i: i + 1,
+            char: clean[i],
+            outputChar: outChar,
+            formula: mode === "encrypt"
+                ? `(${a}*${p} + ${b}) mod 26 = ${c}`
+                : `${aInv}*(${p} - ${b}) mod 26 = ${c}`
+        });
     }
-    return result;
+    return { result, steps };
 }
 
 // ============================================================
@@ -146,30 +179,46 @@ export function playfair(
     text: string,
     keyword: string,
     mode: "encrypt" | "decrypt"
-): string {
+): { result: string; steps: CipherStep[] } {
     if (!toAlpha(keyword)) throw new Error("Kata kunci tidak boleh kosong");
     const matrix = buildPlayfairMatrix(keyword);
     const digraphs = prepareDigraphs(text);
     const dir = mode === "encrypt" ? 1 : -1;
 
     let result = "";
-    for (const pair of digraphs) {
+    const steps: CipherStep[] = [];
+    for (let i = 0; i < digraphs.length; i++) {
+        const pair = digraphs[i];
         const [r1, c1] = matrixPos(matrix, pair[0]);
         const [r2, c2] = matrixPos(matrix, pair[1]);
+        let outPair = "";
+        let formula = "";
+
         if (r1 === r2) {
             // Same row: shift columns
-            result += matrix[r1 * 5 + posMod(c1 + dir, 5)] +
+            outPair = matrix[r1 * 5 + posMod(c1 + dir, 5)] +
                 matrix[r2 * 5 + posMod(c2 + dir, 5)];
+            formula = `Baris sama (Baris ${r1 + 1}), Shift Kolom ${dir > 0 ? 'Kanan' : 'Kiri'}`;
         } else if (c1 === c2) {
             // Same column: shift rows
-            result += matrix[posMod(r1 + dir, 5) * 5 + c1] +
+            outPair = matrix[posMod(r1 + dir, 5) * 5 + c1] +
                 matrix[posMod(r2 + dir, 5) * 5 + c2];
+            formula = `Kolom sama (Kolom ${c1 + 1}), Shift Baris ${dir > 0 ? 'Bawah' : 'Atas'}`;
         } else {
             // Rectangle: swap columns
-            result += matrix[r1 * 5 + c2] + matrix[r2 * 5 + c1];
+            outPair = matrix[r1 * 5 + c2] + matrix[r2 * 5 + c1];
+            formula = `Segi empat, Swap Kolom: [${r1 + 1},${c1 + 1}] & [${r2 + 1},${c2 + 1}]`;
         }
+        result += outPair;
+
+        steps.push({
+            i: i + 1,
+            char: pair,
+            outputChar: outPair,
+            formula: formula
+        });
     }
-    return result;
+    return { result, steps };
 }
 
 // ============================================================
@@ -226,7 +275,7 @@ export function hill(
     flatKey: number[],
     n: number,
     mode: "encrypt" | "decrypt"
-): string {
+): { result: string; steps: CipherStep[] } {
     if (flatKey.length !== n * n)
         throw new Error(`Kunci harus berisi ${n * n} nilai untuk matriks ${n}×${n}`);
 
@@ -254,12 +303,33 @@ export function hill(
     while (clean.length % n !== 0) clean += "X";
 
     let result = "";
+    const steps: CipherStep[] = [];
+
+    // Function to calculate and stringify block multiplication
+    function getFormula(block: number[], enc: number[], kMat: number[][]) {
+        return enc.map((e, rIdx) => {
+            const rowCalc = block.map((v, cIdx) => `${kMat[rIdx][cIdx]}*${v}`).join(" + ");
+            return `(${rowCalc}) mod 26 = ${e}`;
+        }).join(" | ");
+    }
+
     for (let i = 0; i < clean.length; i += n) {
         const block = Array.from({ length: n }, (_, j) => clean.charCodeAt(i + j) - 65);
         const enc = matVecMulN(keyMatrix, block);
-        result += enc.map((x) => String.fromCharCode(x + 65)).join("");
+        const inStr = clean.slice(i, i + n);
+        const outStr = enc.map((x) => String.fromCharCode(x + 65)).join("");
+        result += outStr;
+
+        steps.push({
+            i: (i / n) + 1,
+            char: inStr,
+            outputChar: outStr,
+            formula: getFormula(block, enc, keyMatrix),
+            blockVec: `[${block.join(', ')}]`,
+            outVec: `[${enc.join(', ')}]`
+        });
     }
-    return result;
+    return { result, steps };
 }
 
 // ============================================================

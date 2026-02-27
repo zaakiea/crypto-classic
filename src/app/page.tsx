@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { vigenere, toAlpha } from "@/lib/ciphers";
+import { vigenere, toAlpha, CipherStep } from "@/lib/ciphers";
 
 export default function VigenereScreen() {
   const [inputText, setInputText] = useState("");
   const [cipherKey, setCipherKey] = useState("");
   const [outputText, setOutputText] = useState("");
+  const [steps, setSteps] = useState<CipherStep[]>([]);
   const [mode, setMode] = useState<"encrypt" | "decrypt">("encrypt");
   const [status, setStatus] = useState<"ready" | "ok" | "error">("ready");
   const [elapsed, setElapsed] = useState(0);
@@ -14,12 +15,14 @@ export default function VigenereScreen() {
   function runCipher(m: "encrypt" | "decrypt" = mode) {
     const t0 = performance.now();
     try {
-      const result = vigenere(inputText, cipherKey, mode);
+      const { result, steps: cipherSteps } = vigenere(inputText, cipherKey, mode);
       setOutputText(result);
+      setSteps(cipherSteps);
       setStatus("ok");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setOutputText(`❌ Error: ${msg}`);
+      setSteps([]);
       setStatus("error");
     }
     setElapsed(Math.round(performance.now() - t0));
@@ -149,14 +152,57 @@ export default function VigenereScreen() {
                   Salin
                 </button>
               </div>
-              <div className="w-full h-32 aero-inset p-2.5 text-[13px] text-slate-900 bg-white overflow-y-auto font-mono break-all leading-relaxed">
+              <div className="w-full h-24 aero-inset p-2.5 text-[13px] text-slate-900 bg-white overflow-y-auto font-mono break-all leading-relaxed shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]">
                 {outputText ? (
                   outputText
                 ) : (
-                  <span className="text-slate-400 italic">Hasil akan muncul di sini...</span>
+                  <span className="text-slate-400 italic font-sans text-[12px]">Hasil akan muncul di sini...</span>
                 )}
               </div>
             </div>
+
+            {/* Steps Table */}
+            {steps.length > 0 && (
+              <fieldset className="border border-[#b5b5b5] p-2 bg-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,1)] mt-2 flex flex-col flex-1 min-h-[250px]">
+                <legend className="px-2 text-[12px] text-[#003399] font-semibold flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">table_chart</span>
+                  Log Pemrosesan
+                </legend>
+                <div className="flex justify-between items-center mb-1.5 px-1">
+                  <span className="text-[10px] text-slate-500">
+                    Total {steps.length} operasi.
+                  </span>
+                </div>
+                <div className="aero-inset bg-white overflow-y-auto overflow-x-auto flex-1 max-h-[250px]">
+                  <table className="w-full text-[11px] text-left border-collapse whitespace-nowrap">
+                    <thead className="bg-[linear-gradient(to_bottom,#f0f0f0_0%,#e0e0e0_100%)] sticky top-0 z-10 border-b border-[#a0a0a0] shadow-[0_1px_2px_rgba(0,0,0,0.1)] text-[#333]">
+                      <tr>
+                        <th className="px-2 py-1 font-semibold border-r border-[#c0c0c0] w-8">Idx</th>
+                        <th className="px-2 py-1 font-semibold border-r border-[#c0c0c0] text-center w-12">In</th>
+                        <th className="px-2 py-1 font-semibold border-r border-[#c0c0c0] text-center w-12">Kunci</th>
+                        <th className="px-2 py-1 font-semibold border-r border-[#c0c0c0] text-center w-12">Out</th>
+                        <th className="px-2 py-1 font-semibold">Formula Detail</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {steps.map((step) => {
+                        return (
+                          <tr key={step.i} className={`border-b border-[#f0f0f0] ${(step.i ?? 0) % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]'}`}>
+                            <td className="px-2 py-1 border-r border-[#f0f0f0] font-mono text-slate-500">{step.i}</td>
+                            <td className="px-2 py-1 border-r border-[#f0f0f0] text-center font-bold text-[#000]">{step.char}</td>
+                            <td className="px-2 py-1 border-r border-[#f0f0f0] text-center">
+                              <span className="px-1 rounded text-[10px] font-bold border border-[#a0a0a0] bg-[#f0f0f0] text-slate-700">{step.keyChar}</span>
+                            </td>
+                            <td className="px-2 py-1 border-r border-[#f0f0f0] text-center font-bold text-[#0033bb]">{step.outputChar}</td>
+                            <td className="px-2 py-1 font-mono text-slate-600 truncate">{step.formula}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </fieldset>
+            )}
 
           </div>
 

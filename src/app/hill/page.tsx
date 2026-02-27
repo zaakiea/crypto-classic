@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { hill, hillDeterminant, toAlpha } from "@/lib/ciphers";
+import { hill, hillDeterminant, toAlpha, CipherStep } from "@/lib/ciphers";
 
 function gcd(a: number, b: number): number {
     while (b) { [a, b] = [b, a % b]; }
@@ -31,6 +31,7 @@ export default function HillScreen() {
         ...DEFAULT_MATRICES,
     });
     const [outputText, setOutputText] = useState("");
+    const [steps, setSteps] = useState<CipherStep[]>([]);
     const [mode, setMode] = useState<"encrypt" | "decrypt">("encrypt");
 
     const currentMatrix = matrixValues[matrixSize];
@@ -73,6 +74,7 @@ export default function HillScreen() {
     function changeSize(newSize: MatrixSize) {
         setMatrixSize(newSize);
         setOutputText("");
+        setSteps([]);
     }
 
     function resetMatrix() {
@@ -92,10 +94,12 @@ export default function HillScreen() {
 
     function runCipher(m: "encrypt" | "decrypt" = mode) {
         try {
-            const result = hill(inputText, currentMatrix, matrixSize, m);
+            const { result, steps: cipherSteps } = hill(inputText, currentMatrix, matrixSize, m);
             setOutputText(result);
+            setSteps(cipherSteps);
         } catch (e: unknown) {
             setOutputText(`❌ Error: ${e instanceof Error ? e.message : String(e)}`);
+            setSteps([]);
         }
     }
 
@@ -223,14 +227,57 @@ export default function HillScreen() {
                                     Salin
                                 </button>
                             </div>
-                            <div className="w-full h-32 aero-inset p-2.5 text-[13px] text-slate-900 bg-white overflow-y-auto font-mono break-all leading-relaxed">
+                            <div className="w-full h-24 aero-inset p-2.5 text-[13px] text-slate-900 bg-white overflow-y-auto font-mono break-all leading-relaxed shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]">
                                 {outputText ? (
                                     outputText
                                 ) : (
-                                    <span className="text-slate-400 italic">Hasil akan muncul di sini...</span>
+                                    <span className="text-slate-400 italic font-sans text-[12px]">Hasil akan muncul di sini...</span>
                                 )}
                             </div>
                         </div>
+
+                        {/* Steps Table */}
+                        {steps.length > 0 && (
+                            <fieldset className="border border-[#b5b5b5] p-2 bg-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,1)] mt-2 flex flex-col flex-1 min-h-[250px]">
+                                <legend className="px-2 text-[12px] text-[#003399] font-semibold flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[14px]">table_chart</span>
+                                    Log Pemrosesan Blok Matriks
+                                </legend>
+                                <div className="flex justify-between items-center mb-1.5 px-1">
+                                    <span className="text-[10px] text-slate-500">
+                                        Total {steps.length} operasi blok ({matrixSize} huruf).
+                                    </span>
+                                </div>
+                                <div className="aero-inset bg-white overflow-y-auto overflow-x-auto flex-1 max-h-[250px]">
+                                    <table className="w-full text-[11px] text-left border-collapse whitespace-nowrap">
+                                        <thead className="bg-[linear-gradient(to_bottom,#f0f0f0_0%,#e0e0e0_100%)] sticky top-0 z-10 border-b border-[#a0a0a0] shadow-[0_1px_2px_rgba(0,0,0,0.1)] text-[#333]">
+                                            <tr>
+                                                <th className="px-2 py-1 font-semibold border-r border-[#c0c0c0] w-8">Blok</th>
+                                                <th className="px-2 py-1 font-semibold border-r border-[#c0c0c0] text-center w-12">In</th>
+                                                <th className="px-2 py-1 font-semibold border-r border-[#c0c0c0] text-center">Vektor In</th>
+                                                <th className="px-2 py-1 font-semibold border-r border-[#c0c0c0] text-center w-12">Out</th>
+                                                <th className="px-2 py-1 font-semibold border-r border-[#c0c0c0] text-center">Vektor Out</th>
+                                                <th className="px-2 py-1 font-semibold">Perkalian Baris per Elemen</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {steps.map((step) => {
+                                                return (
+                                                    <tr key={step.i} className={`border-b border-[#f0f0f0] ${(step.i ?? 0) % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]'}`}>
+                                                        <td className="px-2 py-1 border-r border-[#f0f0f0] font-mono text-slate-500">{step.i}</td>
+                                                        <td className="px-2 py-1 border-r border-[#f0f0f0] text-center font-bold text-[#000] tracking-widest">{step.char}</td>
+                                                        <td className="px-2 py-1 border-r border-[#f0f0f0] text-center text-slate-700 font-mono text-[10px]">{step.blockVec}</td>
+                                                        <td className="px-2 py-1 border-r border-[#f0f0f0] text-center font-bold text-[#0033bb] tracking-widest">{step.outputChar}</td>
+                                                        <td className="px-2 py-1 border-r border-[#f0f0f0] text-center text-slate-700 font-mono text-[10px]">{step.outVec}</td>
+                                                        <td className="px-2 py-1 font-mono text-slate-600 truncate text-[10px]">{step.formula}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </fieldset>
+                        )}
 
                     </div>
 
